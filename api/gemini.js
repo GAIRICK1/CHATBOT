@@ -1,16 +1,12 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
+// /api/gemini.js
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+import axios from 'axios';
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public')); // Serves frontend
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).send('Only POST requests are allowed');
+  }
 
-app.post('/api/gemini', async (req, res) => {
   const { contents } = req.body;
 
   try {
@@ -19,13 +15,10 @@ app.post('/api/gemini', async (req, res) => {
       { contents },
       { headers: { 'Content-Type': 'application/json' } }
     );
-    res.json(response.data);
+
+    res.status(200).json(response.data);
   } catch (error) {
     console.error('Gemini API error:', error.response?.data || error.message);
     res.status(500).json({ error: 'Failed to fetch from Gemini' });
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+}

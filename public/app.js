@@ -7,7 +7,6 @@ let subnitbtn = document.querySelector("#submit");
 
 const API_URL = "/api/gemini";
 
-
 let user = {
   message: null,
   file: {
@@ -16,7 +15,6 @@ let user = {
   }
 };
 
-// 🧠 Store full conversation context
 let conversationHistory = [];
 
 function handleChatResponse(message) {
@@ -56,7 +54,6 @@ function createChatbox(html, classes) {
   return div;
 }
 
-// ✅ Format Markdown to HTML
 function markdownToHtml(text) {
   text = text
     .replace(/^### (.*$)/gim, '<h3>$1</h3>')
@@ -93,13 +90,11 @@ function markdownToHtml(text) {
 async function generateResponse(aichatBox) {
   let text = aichatBox.querySelector(".ai-chatarea");
 
-  // 🧠 Construct user message part
   let userParts = [{ text: user.message }];
   if (user.file?.data) {
     userParts.push({ inline_data: { mime_type: user.file.mime_type, data: user.file.data } });
   }
 
-  // ➕ Add to conversation memory
   conversationHistory.push({
     role: "user",
     parts: userParts
@@ -116,12 +111,19 @@ async function generateResponse(aichatBox) {
   try {
     let response = await fetch(API_URL, requestOptions);
     let data = await response.json();
-    let rawText = data.candidates[0].content.parts[0].text.trim();
+
+    let rawText = "Unexpected response from Gemini.";
+    if (
+      data?.candidates &&
+      data.candidates.length > 0 &&
+      data.candidates[0].content?.parts?.length > 0
+    ) {
+      rawText = data.candidates[0].content.parts[0].text.trim();
+    }
 
     let formattedText = markdownToHtml(rawText);
     text.innerHTML = formattedText;
 
-    // ➕ Add bot response to memory
     conversationHistory.push({
       role: "model",
       parts: [{ text: rawText }]
@@ -137,7 +139,6 @@ async function generateResponse(aichatBox) {
   }
 }
 
-// 🧠 Triggers for input
 prompt.addEventListener("keydown", (e) => {
   if (e.key == "Enter") {
     handleChatResponse(prompt.value);
@@ -151,6 +152,12 @@ subnitbtn.addEventListener("click", () => {
 imginput.addEventListener("change", () => {
   const file = imginput.files[0];
   if (!file) return;
+
+  const maxSize = 4 * 1024 * 1024;
+  if (file.size > maxSize) {
+    alert("Image too large. Please choose a file under 4 MB.");
+    return;
+  }
 
   let reader = new FileReader();
   reader.onload = (e) => {
